@@ -1,7 +1,3 @@
---https://www.projectpro.io/article/sql-database-projects-for-data-analysis-to-practice/565
---https://archive.ics.uci.edu/dataset/352/online+retail
---JupySQL https://ploomber.io/blog/sql-on-jupyter/
-
 ---------------------------------------------------------------------------------------------------
 -- Initialization
 CREATE TABLE IF NOT EXISTS OnlineRetail (
