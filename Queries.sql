@@ -1,5 +1,7 @@
 --https://www.projectpro.io/article/sql-database-projects-for-data-analysis-to-practice/565
 --https://archive.ics.uci.edu/dataset/352/online+retail
+--JupySQL https://ploomber.io/blog/sql-on-jupyter/
+
 ---------------------------------------------------------------------------------------------------
 -- Initialization
 CREATE TABLE IF NOT EXISTS OnlineRetail (
@@ -19,14 +21,14 @@ CREATE TABLE IF NOT EXISTS OnlineRetail (
     -- Import csv to database
 
 ---------------------------------------------------------------------------------------------------
+-- There is data to clear [Cell 1]
 SELECT Description FROM OnlineRetail
 WHERE 
-    Description = LOWER(Description) --Whole description is lowercase
+    Description = LOWER(Description) -- Whole description is lowercase
     OR (LEFT(Description, 1) = UPPER(LEFT(Description, 1)) 
-    AND SUBSTRING(Description, 2) = LOWER(SUBSTRING(Description, 2))) --First letter is uppercase, the rest is lowercase
+    AND SUBSTRING(Description, 2) = LOWER(SUBSTRING(Description, 2))) -- First letter is uppercase, the rest is lowercase
     OR Description IS NULL
 GROUP BY Description LIMIT 10;
-
 
 --Prepare Data
 CREATE TEMPORARY TABLE IF NOT EXISTS temp_OnlineRetail (
@@ -43,42 +45,47 @@ CREATE TEMPORARY TABLE IF NOT EXISTS temp_OnlineRetail (
 INSERT INTO temp_OnlineRetail (
     SELECT * FROM OnlineRetail
     WHERE 
-        Description != LOWER(Description) --Whole description is not lowercase
-        AND (LEFT(Description, 1) != UPPER(LEFT(Description, 1)) --Don't select desc. where the first letter is uppercase and the rest is lowercase
+        Description != LOWER(Description) -- Whole description is not lowercase
+        AND (LEFT(Description, 1) != UPPER(LEFT(Description, 1)) -- Don't select desc. where the first letter is uppercase and the rest is lowercase
             OR SUBSTRING(Description, 2) != LOWER(SUBSTRING(Description, 2))) 
         AND Description IS NOT NULL
-        AND StockCode NOT IN ('POST', 'DOT', 'AMAZONFEE', 'BANK CHARGES', 'S', 'CRUK', 'C2') --Don't include things that are not products
+        AND StockCode NOT IN ('POST', 'DOT', 'AMAZONFEE', 'BANK CHARGES', 'S', 'CRUK', 'C2') -- Don't include things that are not products
 )
 
---What is the distribution of order values across all customers in the dataset?
---How many unique products has each customer purchased?
---Which customers have only made a single purchase from the company?
---Which products are most commonly purchased together by customers in the dataset?
---What product do customers buy most often?
---What product do customers without account buy most often?
---How many products were purchased in total? How much on average per customer?
---How many returns were there in total? How much on average per customer?
-
+-- How does cleared data look like [Cell 2]
 SELECT * FROM temp_OnlineRetail LIMIT 20;
----------------------------------------------------------------------------------------------------
---What is the distribution of order values across all customers in the dataset?
 
--- Mean
+---------------------------------------------------------------------------------------------------
+-- Let's answer to some questions:
+
+-- What is the distribution of prices across dataset?
+-- What is the distribution of order values across all customers in the dataset?
+-- Which countries are our most significant customers?
+-- How many unique products has each customer purchased?
+-- Which customers have only made a single purchase from the company?
+-- Which products are most commonly purchased together by customers in the dataset?
+-- What product do customers buy most often?
+-- What product do customers without account buy most often?
+-- How many products were purchased in total? How much on average per customer?
+-- How many returns were there in total? How much on average per customer?
+
+---------------------------------------------------------------------------------------------------
+-- Mean [Cell 3]
 SELECT AVG(UnitPrice)::numeric(10, 2) FROM temp_OnlineRetail
 
--- Distribution below and over mean
+-- Distribution of prices below and over mean [Cell 4]
 WITH consts (avg) as (
     values ((SELECT AVG(UnitPrice) FROM temp_OnlineRetail))
 )
 SELECT UnitPrice, COUNT(*) FROM (
-    SELECT CASE WHEN UnitPrice BETWEEN -100000 AND (SELECT avg FROM consts) THEN '1. (-INF, AVG)'
-                WHEN UnitPrice BETWEEN (SELECT avg FROM consts) AND 100000 THEN '2. (AVG, INF)'     
+    SELECT CASE WHEN UnitPrice BETWEEN -100000 AND (SELECT avg FROM consts) THEN '(-INF, AVG)'
+                WHEN UnitPrice BETWEEN (SELECT avg FROM consts) AND 100000 THEN '(AVG, INF)'     
     END AS UnitPrice
     FROM temp_OnlineRetail 
 )
 GROUP BY UnitPrice
 
--- Distribution of prices in ranges
+-- Distribution of prices in ranges [Cell 5]
 SELECT UnitPrice, COUNT(*) FROM (
     SELECT CASE WHEN UnitPrice BETWEEN 0 AND 10 THEN '(0, 10)'
                 WHEN UnitPrice BETWEEN 10 AND 100 THEN '(10, 100)' 
@@ -88,8 +95,8 @@ SELECT UnitPrice, COUNT(*) FROM (
 )
 GROUP BY UnitPrice ORDER BY UnitPrice
 
-
--- Distribution of invoice value
+---------------------------------------------------------------------------------------------------
+-- What is the distribution of order values across all customers in the dataset? [Cell 6]
 WITH InvoiceAmount AS (
     SELECT InvoiceNo, SUM(UnitPrice) AS total FROM temp_OnlineRetail
     WHERE Quantity > 0
@@ -105,48 +112,21 @@ SELECT total, COUNT(*) FROM (
 )
 GROUP BY total ORDER BY total
 
--- Truncate data
-SELECT AVG(UnitPrice)::numeric(10, 2)  FROM  (
-    SELECT UnitPrice FROM temp_OnlineRetail WHERE UnitPrice >= 0 AND UnitPrice <= 1000
-)
-
--- Distribution below and over mean
-WITH consts (avg) as (
-    values ((
-        SELECT AVG(UnitPrice)::numeric(10, 2)  FROM  (
-            SELECT UnitPrice FROM temp_OnlineRetail WHERE UnitPrice >= 0 AND UnitPrice <= 1000
-        )
-    ))
-)
-SELECT UnitPrice, COUNT(*) FROM (
-    SELECT CASE WHEN UnitPrice BETWEEN -100000 AND (SELECT avg FROM consts) THEN '1. (-INF, AVG)'
-                WHEN UnitPrice BETWEEN (SELECT avg FROM consts) AND 100000 THEN '2. (AVG, INF)'     
-    END AS UnitPrice
-    FROM (
-        SELECT UnitPrice FROM temp_OnlineRetail WHERE UnitPrice >= 0 AND UnitPrice <= 1000
-    )
-)
-GROUP BY UnitPrice 
-
+---------------------------------------------------------------------------------------------------
+-- Which countries are our most significant customers? [Cell 7]
+SELECT Country, SUM(UnitPrice)::numeric(10, 2) AS total FROM temp_OnlineRetail
+WHERE Quantity > 0
+GROUP BY Country
+ORDER BY total DESC LIMIT 5;
 
 ---------------------------------------------------------------------------------------------------
---How many unique products has each customer purchased?
-SELECT COUNT(DISTINCT Description) FROM temp_OnlineRetail;
-SELECT COUNT(DISTINCT StockCode) FROM temp_OnlineRetail
-
---Example of same Stockcode but different description
-SELECT DISTINCT CustomerID, StockCode, Description FROM temp_OnlineRetail 
-WHERE CustomerID=14911 AND StockCode = '21243'
-
---Top 10 customers who purchased the most products. Each of them is unique. 
+-- How many unique products has each customer purchased? [Cell 8] 
 SELECT CustomerID, Count(DISTINCT StockCode) FROM temp_OnlineRetail
 WHERE CustomerID IS NOT NULL
 GROUP BY CustomerID ORDER BY Count(DISTINCT StockCode) DESC LIMIT 10;
 
-
 ---------------------------------------------------------------------------------------------------
---Which customers have only made a single purchase from the company?
-
+-- Which customers have only made a single purchase from the company? [Cell 9]
 SELECT CustomerID, StockCode, Quantity FROM temp_OnlineRetail
 WHERE Quantity=1 AND 
 CustomerID IN (
@@ -158,8 +138,7 @@ CustomerID IN (
 ORDER BY CustomerID
 
 ---------------------------------------------------------------------------------------------------
---Which products are most commonly purchased together by customers in the dataset?
-
+-- Which products are most commonly purchased together by customers in the dataset? [Cell 10]
 WITH CustomersBuyingMultipleProducts AS (
     SELECT CustomerID, Count(*) FROM (
         SELECT DISTINCT CustomerID, StockCode FROM temp_OnlineRetail
@@ -176,35 +155,25 @@ ORDER BY incidence DESC
 LIMIT 10
 
 ---------------------------------------------------------------------------------------------------
---What product do customers buy most often?
+-- What product do customers buy most often? [Cell 11]
 SELECT StockCode, Description, SUM(Quantity) FROM temp_OnlineRetail  
 WHERE Quantity > 0
 GROUP BY StockCode, Description
 ORDER BY SUM(Quantity) DESC LIMIT 10
 
-
-
 ---------------------------------------------------------------------------------------------------
---What product do customers without account buy most often?
+-- What product do customers without account buy most often? [Cell 12]
 SELECT StockCode, Description, SUM(Quantity) FROM temp_OnlineRetail  
 WHERE Quantity > 0 AND CustomerID IS NULL
 GROUP BY StockCode, Description
 ORDER BY SUM(Quantity) DESC LIMIT 10
 
-
-
-
-
 ---------------------------------------------------------------------------------------------------
---How many products were purchased in total? How much on average per customer?
-
-
+-- How many products were purchased in total? How much on average per customer? [Cell 13]
 SELECT SUM(Quantity) AS TotalProductsSold, (SUM(Quantity) / Count(Quantity)) AS AveragePerCustomer 
 FROM temp_OnlineRetail WHERE Quantity > 0 AND CustomerID IS NOT NULL  
 
-
 ---------------------------------------------------------------------------------------------------
---How many returns were there in total? How much on average per customer?
-
+-- How many returns were there in total? How much on average per customer? [Cell 14]
 SELECT SUM(Quantity)*(-1) AS TotalProductsSold, (SUM(Quantity) / Count(Quantity))*(-1) AS AveragePerCustomer 
 FROM temp_OnlineRetail WHERE Quantity < 0 AND CustomerID IS NOT NULL  
