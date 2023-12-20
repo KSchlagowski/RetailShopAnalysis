@@ -1,5 +1,5 @@
 # RetailShopAnalysis
-In this project we will analyse retail shop dataset using PostgreSQL.
+In this project we will analyze retail shop dataset using PostgreSQL.
 
 We will try to find an answer to some questions:
 - What is the distribution of prices across dataset?
