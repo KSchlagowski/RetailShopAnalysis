@@ -17,6 +17,5 @@ We will try to find an answer to some questions:
 Whole project is made in [Queries.sql](Queries.sql) file. For easier visualization you can check results in [QueriesMarkdown.ipynb](QueriesMarkdown.ipynb).
 
 Dataset source: https://archive.ics.uci.edu/dataset/352/online+retail.
+
 Queries markdown is made using JupySQL https://jupysql.ploomber.io/.
-
-
