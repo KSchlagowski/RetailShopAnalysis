@@ -46,7 +46,7 @@ INSERT INTO temp_OnlineRetail (
             OR SUBSTRING(Description, 2) != LOWER(SUBSTRING(Description, 2))) 
         AND Description IS NOT NULL
         AND StockCode NOT IN ('POST', 'DOT', 'AMAZONFEE', 'BANK CHARGES', 'S', 'CRUK', 'C2') -- Don't include things that are not products
-)
+);
 
 -- How does cleared data look like [Cell 2]
 SELECT * FROM temp_OnlineRetail LIMIT 20;
@@ -67,7 +67,7 @@ SELECT * FROM temp_OnlineRetail LIMIT 20;
 
 ---------------------------------------------------------------------------------------------------
 -- Mean [Cell 3]
-SELECT AVG(UnitPrice)::numeric(10, 2) FROM temp_OnlineRetail
+SELECT AVG(UnitPrice)::numeric(10, 2) FROM temp_OnlineRetail;
 
 -- Distribution of prices below and over mean [Cell 4]
 WITH consts (avg) as (
@@ -79,7 +79,7 @@ SELECT UnitPrice, COUNT(*) FROM (
     END AS UnitPrice
     FROM temp_OnlineRetail 
 )
-GROUP BY UnitPrice
+GROUP BY UnitPrice;
 
 -- Distribution of prices in ranges [Cell 5]
 SELECT UnitPrice, COUNT(*) FROM (
@@ -89,7 +89,7 @@ SELECT UnitPrice, COUNT(*) FROM (
     END AS UnitPrice
     FROM temp_OnlineRetail
 )
-GROUP BY UnitPrice ORDER BY UnitPrice
+GROUP BY UnitPrice ORDER BY UnitPrice;
 
 ---------------------------------------------------------------------------------------------------
 -- What is the distribution of order values across all customers in the dataset? [Cell 6]
@@ -106,7 +106,7 @@ SELECT total, COUNT(*) FROM (
     END AS total
     FROM InvoiceAmount
 )
-GROUP BY total ORDER BY total
+GROUP BY total ORDER BY total;
 
 ---------------------------------------------------------------------------------------------------
 -- Which countries are our most significant customers? [Cell 7]
@@ -131,7 +131,7 @@ CustomerID IN (
     GROUP BY CustomerID
     HAVING Count(*)=1
 )
-ORDER BY CustomerID
+ORDER BY CustomerID;
 
 ---------------------------------------------------------------------------------------------------
 -- Which products are most commonly purchased together by customers in the dataset? [Cell 10]
@@ -148,28 +148,28 @@ SELECT StockCode, Description, Count(StockCode) AS incidence FROM temp_OnlineRet
 WHERE CustomerID in (SELECT CustomerID FROM CustomersBuyingMultipleProducts)
 GROUP BY StockCode, Description
 ORDER BY incidence DESC
-LIMIT 10
+LIMIT 10;
 
 ---------------------------------------------------------------------------------------------------
 -- What product do customers buy most often? [Cell 11]
 SELECT StockCode, Description, SUM(Quantity) FROM temp_OnlineRetail  
 WHERE Quantity > 0
 GROUP BY StockCode, Description
-ORDER BY SUM(Quantity) DESC LIMIT 10
+ORDER BY SUM(Quantity) DESC LIMIT 10;
 
 ---------------------------------------------------------------------------------------------------
 -- What product do customers without account buy most often? [Cell 12]
 SELECT StockCode, Description, SUM(Quantity) FROM temp_OnlineRetail  
 WHERE Quantity > 0 AND CustomerID IS NULL
 GROUP BY StockCode, Description
-ORDER BY SUM(Quantity) DESC LIMIT 10
+ORDER BY SUM(Quantity) DESC LIMIT 10;
 
 ---------------------------------------------------------------------------------------------------
 -- How many products were purchased in total? How much on average per customer? [Cell 13]
 SELECT SUM(Quantity) AS TotalProductsSold, (SUM(Quantity) / Count(Quantity)) AS AveragePerCustomer 
-FROM temp_OnlineRetail WHERE Quantity > 0 AND CustomerID IS NOT NULL  
+FROM temp_OnlineRetail WHERE Quantity > 0 AND CustomerID IS NOT NULL;
 
 ---------------------------------------------------------------------------------------------------
 -- How many returns were there in total? How much on average per customer? [Cell 14]
 SELECT SUM(Quantity)*(-1) AS TotalProductsSold, (SUM(Quantity) / Count(Quantity))*(-1) AS AveragePerCustomer 
-FROM temp_OnlineRetail WHERE Quantity < 0 AND CustomerID IS NOT NULL  
+FROM temp_OnlineRetail WHERE Quantity < 0 AND CustomerID IS NOT NULL;
